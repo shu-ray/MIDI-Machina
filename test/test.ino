@@ -1,3 +1,5 @@
+// Simply test MIDI connections with a digital button
+
 const int buttonPin = 2;
 int lastButtonState = LOW;
 
@@ -6,7 +8,7 @@ void sendMIDImessage(byte statusByte, byte data1, byte data2){
   Serial.write(data1);
   Serial.write(data2);
   }
-  
+
 void setup() {
   pinMode(buttonPin,INPUT_PULLUP);
   Serial.begin(38400);
