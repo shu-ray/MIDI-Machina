@@ -3,5 +3,4 @@ MIDI_Machina is a project featuring several electronic music instruments built w
 
 _"There is no mistakes, only opportunities."_
 ---
-the truth is; 
 ~~dude too poor to buy [fun toys](https://www.amazon.com/engineering-Portable-Synthesizer-Controller-Recorder/dp/B00CXSJUZS/ref=sr_1_1?keywords=teenage+engineering+op1&qid=1648444874&sr=8-1 ":(") so he made it himself lol.~~
