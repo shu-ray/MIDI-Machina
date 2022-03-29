@@ -22,5 +22,7 @@ void loop() {
     //if (lastButtonState == HIGH) Serial.println("off");
     }
   lastButtonState = digitalRead(buttonPin);
-  delay(2);
+
+  // Delay for 1 milisecond for execution stability
+  delay(1);
 }

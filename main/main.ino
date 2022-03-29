@@ -1,8 +1,8 @@
 // Total of 2 octaves + 1 more note for aesthethicc reason, starting from digital pin 22
 const int notePin[25] = {22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46};   
 
-// Storing every note pins latest state by using 2D array as key:value data pairs, except that the key is the index of the sublists itself , LOW is the initial state
-int lastNotePinState[25][1] = {{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW},{LOW}};
+// Storing every note pins latest state by using 2D array as key:value data pairs, except that the key is the index of the sublists itself
+int lastNotePinState[25][1] = {};
 // Used to prefix pin number when working with list indexes
 int notePrefix = 22;
 
@@ -17,10 +17,10 @@ void sendMIDIdata(byte statusByte, byte data1, byte data2)
 const byte noteON = 10010000;
 const byte noteOFF = 10000000;
 
-// Check every pins changes then send MIDI note data respectively
+// Check every note pins changes then send MIDI note data respectively
 void listenNotePins(){
     for (int i = 22; i <= 46; i++){
-        // Check for pin changes
+        // Check for note pin changes
         if (digitalRead(i) != lastNotePinState[i-notePrefix][0]){
             if (lastNotePinState[i-notePrefix][0] == HIGH){
                 switch (i){
@@ -103,7 +103,7 @@ void listenNotePins(){
                     break;
                 
                 }
-                // Set last pin state
+                // Set last note pin state
                 lastNotePinState[i-notePrefix][0] = HIGH;
             }
             if (lastNotePinState[i-notePrefix][0] == LOW){
@@ -184,11 +184,10 @@ void listenNotePins(){
                     break;
                 case 46:
                     sendMIDIdata(noteOFF,84,0);
-                    break;
-                
+                    break;                
                 }
-                // Set last pin state
-                lastNotePinState[i-notePrefix][0] = HIGH;
+                // Set last note pin state
+                lastNotePinState[i-notePrefix][0] = LOW;
             }
         }
     }
@@ -196,8 +195,18 @@ void listenNotePins(){
 
 void setup(){
     
-    // Initialize pins and lastNotePinState 2D array
+    // Initialize note pins and lastNotePinState 2D array
     for (int i = 22; i <= 46; i++){
         pinMode(notePin[i], INPUT_PULLUP);
+
+        // Set all note pins initial state as LOW
+        lastNotePinState[i-notePrefix][0] = LOW;
     }
+}
+
+void loop(){
+    listenNotePins();
+
+    // Delay for 1 milisecond for execution stability
+    delay(1);
 }
