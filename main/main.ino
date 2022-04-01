@@ -1,15 +1,27 @@
-// Total of 2 octaves + 1 more note for aesthethicc reason, starting from digital pin 22
-const int notePin[25] = {22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46};   
+/*
+    A few notes to self:
+    - Minimize calling AnalogRead() and DigitalRead(), on a single pin as possible to avoid inconsistencies
+*/
 
-// Storing every note pins latest state by using 2D array as key:value data pairs, except that the key is the index of the sublists itself
-int lastNotePinState[25][1] = {};
+// Total of 2 octaves + 1 more note for aesthethicc reason, starting from digital pin 22
+const int notePin[25] = {22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46};
+
+// Pitch Bend pin
+const int pBendPin = A0;
+int pBendRead = 0;
+
+// Pitch Modulation pin
+const int pModPin = A1;
+
+// Stores every note pins latest state by using 2D array as key:value data pairs, except that the key is the index of the sublists itself
+int lastNotePinStates[25][1] = {};
+
 // Used to prefix pin number when working with list indexes
 int notePrefix = 22;
 
 
-// Documentation about using MIDI - http://www.music-software-development.com/midi-tutorial.html - https://midi.org/specifications/midi1-specifications
-void sendMIDIdata(byte statusByte, byte data1, byte data2)
-{
+// Documentation about MIDI programming - http://www.music-software-development.com/midi-tutorial.html - https://midi.org/specifications/midi1-specifications
+void MIDI(byte statusByte, byte data1, byte data2){
   Serial.write(statusByte);
   Serial.write(data1);
   Serial.write(data2);
@@ -18,190 +30,114 @@ const byte noteON = 10010000;
 const byte noteOFF = 10000000;
 
 // Check every note pins changes then send MIDI note data respectively
-void listenNotePins(){
-    for (int i = 22; i <= 46; i++){
+void listenPiaNotePins(){
+    for (int i : notePin){
         // Check for note pin changes
-        if (digitalRead(i) != lastNotePinState[i-notePrefix][0]){
-            if (lastNotePinState[i-notePrefix][0] == HIGH){
+        if (digitalRead(i) != lastNotePinStates[i-notePrefix][0]){
+            if (lastNotePinStates[i-notePrefix][0] == HIGH){
                 switch (i){
+
                     // 1st octave
-                case 22:
-                    sendMIDIdata(noteON,60,64);
-                    break;
-                case 23:
-                    sendMIDIdata(noteON,61,64);
-                    break;
-                case 24:
-                    sendMIDIdata(noteON,62,64);
-                    break;
-                case 25:
-                    sendMIDIdata(noteON,63,64);
-                    break;
-                case 26:
-                    sendMIDIdata(noteON,64,64);
-                    break;
-                case 27:
-                    sendMIDIdata(noteON,65,64);
-                    break;
-                case 28:
-                    sendMIDIdata(noteON,66,64);
-                    break;
-                case 29:
-                    sendMIDIdata(noteON,67,64);
-                    break;
-                case 30:
-                    sendMIDIdata(noteON,68,64);
-                    break;
-                case 31:
-                    sendMIDIdata(noteON,69,64);
-                    break;
-                case 32:
-                    sendMIDIdata(noteON,70,64);
-                    break;
-                case 33:
-                    sendMIDIdata(noteON,71,64);
-                    break;
+                case 22: MIDI(noteON,60,64); break;
+                case 23: MIDI(noteON,61,64); break;
+                case 24: MIDI(noteON,62,64); break;
+                case 25: MIDI(noteON,63,64); break;
+                case 26: MIDI(noteON,64,64); break;
+                case 27: MIDI(noteON,65,64); break;
+                case 28: MIDI(noteON,66,64); break;
+                case 29: MIDI(noteON,67,64); break;
+                case 30: MIDI(noteON,68,64); break;
+                case 31: MIDI(noteON,69,64); break;
+                case 32: MIDI(noteON,70,64); break;
+                case 33: MIDI(noteON,71,64); break;
+                    
                     // 2nd octave ==========
-                case 34:
-                    sendMIDIdata(noteON,72,64);
-                    break;
-                case 35:
-                    sendMIDIdata(noteON,73,64);
-                    break;
-                case 36:
-                    sendMIDIdata(noteON,74,64);
-                    break;
-                case 37:
-                    sendMIDIdata(noteON,75,64);
-                    break;
-                case 38:
-                    sendMIDIdata(noteON,76,64);
-                    break;
-                case 39:
-                    sendMIDIdata(noteON,77,64);
-                    break;
-                case 40:
-                    sendMIDIdata(noteON,78,64);
-                    break;
-                case 41:
-                    sendMIDIdata(noteON,79,64);
-                    break;
-                case 42:
-                    sendMIDIdata(noteON,80,64);
-                    break;
-                case 43:
-                    sendMIDIdata(noteON,81,64);
-                    break;
-                case 44:
-                    sendMIDIdata(noteON,82,64);
-                    break;
-                case 45:
-                    sendMIDIdata(noteON,83,64);
-                    break;
-                case 46:
-                    sendMIDIdata(noteON,84,64);
-                    break;
-                
+                case 34: MIDI(noteON,72,64); break;
+                case 35: MIDI(noteON,73,64); break;
+                case 36: MIDI(noteON,74,64); break;
+                case 37: MIDI(noteON,75,64); break;
+                case 38: MIDI(noteON,76,64); break;
+                case 39: MIDI(noteON,77,64); break;
+                case 40: MIDI(noteON,78,64); break;
+                case 41: MIDI(noteON,79,64); break;
+                case 42: MIDI(noteON,80,64); break;
+                case 43: MIDI(noteON,81,64); break;
+                case 44: MIDI(noteON,82,64); break;
+                case 45: MIDI(noteON,83,64); break;
+                case 46: MIDI(noteON,84,64); break;
                 }
                 // Set last note pin state
-                lastNotePinState[i-notePrefix][0] = HIGH;
+                lastNotePinStates[i-notePrefix][0] = HIGH;
             }
-            if (lastNotePinState[i-notePrefix][0] == LOW){
+            if (lastNotePinStates[i-notePrefix][0] == LOW){
                 switch (i){
+
                     // 1st octave
-                case 22:
-                    sendMIDIdata(noteOFF,60,0);
-                    break;
-                case 23:
-                    sendMIDIdata(noteOFF,61,0);
-                    break;
-                case 24:
-                    sendMIDIdata(noteOFF,62,0);
-                    break;
-                case 25:
-                    sendMIDIdata(noteOFF,63,0);
-                    break;
-                case 26:
-                    sendMIDIdata(noteOFF,64,0);
-                    break;
-                case 27:
-                    sendMIDIdata(noteOFF,65,0);
-                    break;
-                case 28:
-                    sendMIDIdata(noteOFF,66,0);
-                    break;
-                case 29:
-                    sendMIDIdata(noteOFF,67,0);
-                    break;
-                case 30:
-                    sendMIDIdata(noteOFF,68,0);
-                    break;
-                case 31:
-                    sendMIDIdata(noteOFF,69,0);
-                    break;
-                case 32:
-                    sendMIDIdata(noteOFF,70,0);
-                    break;
-                case 33:
-                    sendMIDIdata(noteOFF,71,0);
-                    break;
+                case 22: MIDI(noteOFF,60,0); break;
+                case 23: MIDI(noteOFF,61,0); break;
+                case 24: MIDI(noteOFF,62,0); break;
+                case 25: MIDI(noteOFF,63,0); break;
+                case 26: MIDI(noteOFF,64,0); break;
+                case 27: MIDI(noteOFF,65,0); break;
+                case 28: MIDI(noteOFF,66,0); break;
+                case 29: MIDI(noteOFF,67,0); break;
+                case 30: MIDI(noteOFF,68,0); break;
+                case 31: MIDI(noteOFF,69,0); break;
+                case 32: MIDI(noteOFF,70,0); break;
+                case 33: MIDI(noteOFF,71,0); break;
+                    
                     // 2nd octave ==========
-                case 34:
-                    sendMIDIdata(noteOFF,72,0);
-                    break;
-                case 35:
-                    sendMIDIdata(noteOFF,73,0);
-                    break;
-                case 36:
-                    sendMIDIdata(noteOFF,74,0);
-                    break;
-                case 37:
-                    sendMIDIdata(noteOFF,75,0);
-                    break;
-                case 38:
-                    sendMIDIdata(noteOFF,76,0);
-                    break;
-                case 39:
-                    sendMIDIdata(noteOFF,77,0);
-                    break;
-                case 40:
-                    sendMIDIdata(noteOFF,78,0);
-                    break;
-                case 41:
-                    sendMIDIdata(noteOFF,79,0);
-                    break;
-                case 42:
-                    sendMIDIdata(noteOFF,80,0);
-                    break;
-                case 43:
-                    sendMIDIdata(noteOFF,81,0);
-                    break;
-                case 44:
-                    sendMIDIdata(noteOFF,82,0);
-                    break;
-                case 45:
-                    sendMIDIdata(noteOFF,83,0);
-                    break;
-                case 46:
-                    sendMIDIdata(noteOFF,84,0);
-                    break;                
+                case 34: MIDI(noteOFF,72,0); break;
+                case 35: MIDI(noteOFF,73,0); break;
+                case 36: MIDI(noteOFF,74,0); break;
+                case 37: MIDI(noteOFF,75,0); break;
+                case 38: MIDI(noteOFF,76,0); break;
+                case 39: MIDI(noteOFF,77,0); break;
+                case 40: MIDI(noteOFF,78,0); break;
+                case 41: MIDI(noteOFF,79,0); break;
+                case 42: MIDI(noteOFF,80,0); break;
+                case 43: MIDI(noteOFF,81,0); break;
+                case 44: MIDI(noteOFF,82,0); break;
+                case 45: MIDI(noteOFF,83,0); break;
+
+                case 46: MIDI(noteOFF,84,0); break;                
                 }
                 // Set last note pin state
-                lastNotePinState[i-notePrefix][0] = LOW;
+                lastNotePinStates[i-notePrefix][0] = LOW;
             }
         }
     }
 }
 
+void pitchBend(){
+    pBendRead = analogRead(pBendPin);
+
+    // Sends data only when the modulation wheel moves
+    if (511 <= pBendRead <= 513){
+
+        // (0,64) = center, no change in pitch | 1 semitone = 32 int
+        MIDI(11100000,0,map(pBendRead, 0, 1023, 0, 127));
+    }
+}
+
+void pitchModulate(){
+
+}
+
+
 void setup(){
-    
+    Serial.begin(38400);
+
     // Initialize note pins and lastNotePinState 2D array
-    for (int i = 22; i <= 46; i++){
+    for (int i : notePin){
         pinMode(notePin[i], INPUT_PULLUP);
 
         // Set all note pins initial state as LOW
-        lastNotePinState[i-notePrefix][0] = LOW;
+        lastNotePinStates[i-notePrefix][0] = LOW;
     }
+
+    pinMode(pBendPin, INPUT);
+    pinMode(pModPin, INPUT);
 }
 
 void loop(){
