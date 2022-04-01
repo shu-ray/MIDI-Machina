@@ -20,14 +20,15 @@ void loop(){
 
   // Check for pin changes and send MIDI signal accordingly
   if (digitalRead(buttonPin) != lastButtonState){
-    if (lastButtonState == HIGH) sendMIDImessage(10010000,00111100,64);
-    if (lastButtonState == LOW) sendMIDImessage(10000000,00111100,00000000);
-    //if (lastButtonState == LOW) Serial.println("on");
-    //if (lastButtonState == HIGH) Serial.println("off");
+    if (lastButtonState == HIGH){
+      sendMIDImessage(10010000,64,64);
+      lastButtonState = HIGH;
+      }
+    if (lastButtonState == LOW){
+      sendMIDImessage(10000000,64,0);
+      lastButtonState = LOW;
+      }
     }
-
-  // Set last pin state
-  lastButtonState = digitalRead(buttonPin);
 
   // Delay for 1 milisecond for execution stability
   delay(1);
