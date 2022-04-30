@@ -30,11 +30,13 @@ const byte noteON = 10010000;
 const byte noteOFF = 10000000;
 
 // Check every note pins changes then send MIDI note data respectively
-void listenPiaNotePins(){
+void listenNotePins(){
     for (int i : notePin){
         // Check for note pin changes
-        if (digitalRead(i) != lastNotePinStates[i-notePrefix][0]){
-            if (lastNotePinStates[i-notePrefix][0] == HIGH){
+        int currentPinState = digitalRead(i);
+        if (currentPinState != lastNotePinStates[i-notePrefix][0]){
+            // HIGH is when the switch isn't pressed and LOW otherwise since using INPUT_PULLUP pin mode
+            if (currentPinState == LOW){
                 switch (i){
 
                     // 1st octave
@@ -66,10 +68,10 @@ void listenPiaNotePins(){
                 case 45: MIDI(noteON,83,64); break;
                 case 46: MIDI(noteON,84,64); break;
                 }
-                // Set last note pin state
-                lastNotePinStates[i-notePrefix][0] = HIGH;
+                // Set note pin of "i" latest state
+                lastNotePinStates[i-notePrefix][0] = LOW;
             }
-            if (lastNotePinStates[i-notePrefix][0] == LOW){
+            if (currentPinState == HIGH){
                 switch (i){
 
                     // 1st octave
@@ -102,8 +104,8 @@ void listenPiaNotePins(){
 
                 case 46: MIDI(noteOFF,84,0); break;                
                 }
-                // Set last note pin state
-                lastNotePinStates[i-notePrefix][0] = LOW;
+                // Set note pin of "i" latest state
+                lastNotePinStates[i-notePrefix][0] = HIGH;
             }
         }
     }
@@ -130,10 +132,10 @@ void setup(){
 
     // Initialize note pins and lastNotePinState 2D array
     for (int i : notePin){
-        pinMode(notePin[i], INPUT_PULLUP);
+        pinMode(notePin[i-notePrefix], INPUT_PULLUP);
 
-        // Set all note pins initial state as LOW
-        lastNotePinStates[i-notePrefix][0] = LOW;
+        // Set all note pins initial state as HIGH (unpressed)
+        lastNotePinStates[i-notePrefix][0] = HIGH;
     }
 
     pinMode(pBendPin, INPUT);
