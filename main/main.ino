@@ -7,11 +7,16 @@
 const int notePin[25] = {22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46};
 
 // Pitch Bend pin
-const int pBendPin = A0;
-int pBendRead = 0;
+const int pBendPin_x = A0;
+const int pBendPin_y = A1;
+int pBendIdleVal_x = 0;
+int pBendIdleVal_y = 0;
 
 // Pitch Modulation pin
-const int pModPin = A1;
+const int pModPin_x = A2;
+const int pModPin_y = A3;
+int pModIdleVal_x = 0;
+int pModIdleVal_y = 0;
 
 // Stores every note pins latest state by using 2D array as key:value data pairs, except that the key is the index of the sublists itself
 int lastNotePinStates[25][1] = {};
@@ -112,14 +117,7 @@ void listenNotePins(){
 }
 
 void pitchBend(){
-    pBendRead = analogRead(pBendPin);
-
-    // Sends data only when the modulation wheel moves
-    if (511 <= pBendRead <= 513){
-
-        // (0,64) = center, no change in pitch | 1 semitone = 32 int
-        MIDI(11100000,0,map(pBendRead, 0, 1023, 0, 127));
-    }
+        
 }
 
 void pitchModulate(){
@@ -138,8 +136,23 @@ void setup(){
         lastNotePinStates[i-notePrefix][0] = HIGH;
     }
 
-    pinMode(pBendPin, INPUT);
-    pinMode(pModPin, INPUT);
+    // Calibration
+    int i = 0;
+    while (millis() < 3000){
+        if (millis() % 300 == 0){                      // Sum up 10 analog readings of joysticks that were read,
+            pBendIdleVal_x += analogRead(pBendPin_x);   // for every 0.3 second in 3 seconds since the Arduino booted up
+            pBendIdleVal_y += analogRead(pBendPin_y);
+            pModIdleVal_x += analogRead(pModPin_x);
+            pModIdleVal_y += analogRead(pModPin_y);
+            i++;
+        }
+    }
+
+    // Divide the sum of those analog readings by 10 to get the average value
+    pBendIdleVal_x = round(pBendIdleVal_x / i);
+    pBendIdleVal_y = round(pBendIdleVal_y / i);
+    pModIdleVal_x = round(pModIdleVal_x / i);
+    pModIdleVal_y = round(pModIdleVal_y / i);
 }
 
 void loop(){
