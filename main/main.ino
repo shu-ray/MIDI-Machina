@@ -1,29 +1,25 @@
 /*
     A few notes to self:
-    - Minimize calling AnalogRead() and DigitalRead(), on a single pin as possible to avoid inconsistencies
+    - Minimize calling AnalogRead() and DigitalRead(), on a pin as possible to avoid inconsistencies
 */
 
 // Total of 2 octaves + 1 more note for aesthethicc reason, starting from digital pin 22
 const int notePin[25] = {22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46};
 
 // Pitch Bend pin
-const int pBendPin_x = A0;
-const int pBendPin_y = A1;
-int pBendIdleVal_x = 0;
-int pBendIdleVal_y = 0;
+const int pBendPin_x = A0; const int pBendPin_y = A1;
+// Idle values initialization
+int pBendIdleVal_x = 0; int pBendIdleVal_y = 0;
 
 // Pitch Modulation pin
-const int pModPin_x = A2;
-const int pModPin_y = A3;
-int pModIdleVal_x = 0;
-int pModIdleVal_y = 0;
+const int pModPin_x = A2; const int pModPin_y = A3;
+// Idle values initialization
+int pModIdleVal_x = 0; int pModIdleVal_y = 0;
 
 // Stores every note pins latest state by using 2D array as key:value data pairs, except that the key is the index of the sublists itself
 int lastNotePinStates[25][1] = {};
-
 // Used to prefix pin number when working with list indexes
 int notePrefix = 22;
-
 
 // Documentation about MIDI programming - http://www.music-software-development.com/midi-tutorial.html - https://midi.org/specifications/midi1-specifications
 void MIDI(byte statusByte, byte data1, byte data2){
@@ -31,8 +27,7 @@ void MIDI(byte statusByte, byte data1, byte data2){
   Serial.write(data1);
   Serial.write(data2);
 }
-const byte noteON = 10010000;
-const byte noteOFF = 10000000;
+const byte noteON = 10010000; const byte noteOFF = 10000000;
 
 // Check every note pins changes then send MIDI note data respectively
 void listenNotePins(){
@@ -116,11 +111,45 @@ void listenNotePins(){
     }
 }
 
+// Just abstracting out these lil codes checking active joysticcs
+bool checkActiveJoysticks(int readVal, int idleVal){
+    if (readVal > (idleVal + 1) && readVal < (idleVal - 1)){
+        return true;
+    }
+}
+
 void pitchBend(){
+    int pBendRead_x = analogRead(pBendPin_x); int pBendRead_y = analogRead(pBendPin_y);
+    int pBendRead = (pBendRead_x + pBendRead_y) / 2;
+
+    // Check if the joystick is active (i.e any of the jsticks potentiometers axes is moving)
+    if ((checkActiveJoysticks(pBendRead_x, pBendIdleVal_x)) && (checkActiveJoysticks(pBendRead_y, pBendIdleVal_y))){
         
+        // Map the pBendRead to values from 0 to 8192 (0x2000 is the center (no bends))
+        int dataBytes = map(pBendRead, 0, 1023, 0x0, 0x3FFF);
+
+        // Literally split dataBytes to two bytes
+        byte LSB = dataBytes << 4;
+        byte MSB = dataBytes >> 4;
+        MIDI(11100000,LSB, MSB);
+    }
 }
 
 void pitchModulate(){
+    int pModRead_x = analogRead(pModPin_x); int pModRead_y = analogRead(pModPin_y);
+    int pModRead = (pModRead_x + pModRead_y) / 2;
+
+    // Check if the joystick is active (i.e any of the jsticks potentiometers axes is moving)
+    if ((checkActiveJoysticks(pModRead_x, pModIdleVal_x)) && (checkActiveJoysticks(pModRead_y, pModIdleVal_y))){
+        
+        // Map the pBendRead to values from 0 to 8192 (0x2000 is the center (no bends))
+        int dataBytes = map(pModRead, 0, 1023, 0x0, 0x3FFF);
+
+        // Literally split dataBytes to two bytes
+        byte LSB = dataBytes << 4;
+        byte MSB = dataBytes >> 4;
+        MIDI(0xE0,LSB, MSB);            // 0xE0 is for channel 0 and 0xEF is for channel 15
+    }
 
 }
 
@@ -138,26 +167,22 @@ void setup(){
 
     // Calibration
     int i = 0;
-    while (millis() < 3000){
-        if (millis() % 300 == 0){                      // Sum up 10 analog readings of joysticks that were read,
-            pBendIdleVal_x += analogRead(pBendPin_x);   // for every 0.3 second in 3 seconds since the Arduino booted up
-            pBendIdleVal_y += analogRead(pBendPin_y);
-            pModIdleVal_x += analogRead(pModPin_x);
-            pModIdleVal_y += analogRead(pModPin_y);
+    while (millis() < 2000){
+        if (millis() % 200 == 0){                      // Sum up 10 analog readings of joysticks that were read,
+            pBendIdleVal_x += analogRead(pBendPin_x); pBendIdleVal_y += analogRead(pBendPin_y);
+            pModIdleVal_x += analogRead(pModPin_x); pModIdleVal_y += analogRead(pModPin_y);
             i++;
         }
     }
 
     // Divide the sum of those analog readings by 10 to get the average value
-    pBendIdleVal_x = round(pBendIdleVal_x / i);
-    pBendIdleVal_y = round(pBendIdleVal_y / i);
-    pModIdleVal_x = round(pModIdleVal_x / i);
-    pModIdleVal_y = round(pModIdleVal_y / i);
+    pBendIdleVal_x = round(pBendIdleVal_x / i); pBendIdleVal_y = round(pBendIdleVal_y / i);
+    pModIdleVal_x = round(pModIdleVal_x / i); pModIdleVal_y = round(pModIdleVal_y / i);
 }
 
 void loop(){
     listenNotePins();
-
-    // Delay for 1 milisecond for execution stability
-    delay(1);
+    pitchBend();
+    pitchModulate();
+    delay(1);           // Delay for 1 milisecond for execution stability
 }
