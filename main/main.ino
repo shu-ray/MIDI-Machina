@@ -123,7 +123,7 @@ void pitchBend(){
     int pBendRead = (pBendRead_x + pBendRead_y) / 2;
 
     // Check if the joystick is active (i.e any of the jsticks potentiometers axes is moving)
-    if ((checkActiveJoysticks(pBendRead_x, pBendIdleVal_x)) && (checkActiveJoysticks(pBendRead_y, pBendIdleVal_y))){
+    if ((checkActiveJoysticks(pBendRead_x, pBendIdleVal_x)) || (checkActiveJoysticks(pBendRead_y, pBendIdleVal_y))){
         
         // Map the pBendRead to values from 0 to 8192 (0x2000 is the center (no bends))
         int dataBytes = map(pBendRead, 0, 1023, 0x0, 0x3FFF);
@@ -140,7 +140,7 @@ void pitchModulate(){
     int pModRead = (pModRead_x + pModRead_y) / 2;
 
     // Check if the joystick is active (i.e any of the jsticks potentiometers axes is moving)
-    if ((checkActiveJoysticks(pModRead_x, pModIdleVal_x)) && (checkActiveJoysticks(pModRead_y, pModIdleVal_y))){
+    if ((checkActiveJoysticks(pModRead_x, pModIdleVal_x)) || (checkActiveJoysticks(pModRead_y, pModIdleVal_y))){
         
         // Map the pBendRead to values from 0 to 8192 (0x2000 is the center (no bends))
         int dataBytes = map(pModRead, 0, 1023, 0x0, 0x3FFF);
