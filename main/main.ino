@@ -11,10 +11,20 @@ const int pBendPin_x = A0; const int pBendPin_y = A1;
 // Idle values initialization
 int pBendIdleVal_x = 0; int pBendIdleVal_y = 0;
 
-// Pitch Modulation pin
+// Pitch Modulation pins
 const int pModPin_x = A2; const int pModPin_y = A3;
 // Idle values initialization
 int pModIdleVal_x = 0; int pModIdleVal_y = 0;
+
+// Drumpad pins (8 analog pins for the pads, 2 digital pins for shift-key-behaviour)
+const int dPadsPin[8] = {A4,A5,A6,A7,A8,A9,A10,A11};
+    //const int dPad0 = A4; const int dPad1 = A5; const int dPad2 = A6; const int dPad3 = A7;
+int dPadsReads[8] = {};
+int dPadsIdle[8] = {};
+// Used when working with dPadsPin with another list in for-loops
+int pinToRead = 0;
+
+const int shiftKey0 = 2; const int shiftKey1 = 3;
 
 // Stores every note pins latest state by using 2D array as key:value data pairs, except that the key is the index of the sublists itself
 int lastNotePinStates[25][1] = {};
@@ -27,7 +37,7 @@ void MIDI(byte statusByte, byte data1, byte data2){
   Serial.write(data1);
   Serial.write(data2);
 }
-const byte noteON = 10010000; const byte noteOFF = 10000000;
+const byte noteON = 0x90; const byte noteOFF = 0x80;
 
 // Check every note pins changes then send MIDI note data respectively
 void listenNotePins(){
@@ -112,7 +122,7 @@ void listenNotePins(){
 }
 
 // Just abstracting out these lil codes checking active joysticcs
-bool checkActiveJoysticks(int readVal, int idleVal){
+bool checkActiveAnalog(int readVal, int idleVal){
     if (readVal > (idleVal + 1) && readVal < (idleVal - 1)){
         return true;
     }
@@ -120,27 +130,31 @@ bool checkActiveJoysticks(int readVal, int idleVal){
 
 void pitchBend(){
     int pBendRead_x = analogRead(pBendPin_x); int pBendRead_y = analogRead(pBendPin_y);
-    int pBendRead = (pBendRead_x + pBendRead_y) / 2;
 
     // Check if the joystick is active (i.e any of the jsticks potentiometers axes is moving)
-    if ((checkActiveJoysticks(pBendRead_x, pBendIdleVal_x)) || (checkActiveJoysticks(pBendRead_y, pBendIdleVal_y))){
+    if ((checkActiveAnalog(pBendRead_x, pBendIdleVal_x)) || (checkActiveAnalog(pBendRead_y, pBendIdleVal_y))){
         
+        // Sum + divide
+        int pBendRead = (pBendRead_x + pBendRead_y) / 2;
+
         // Map the pBendRead to values from 0 to 8192 (0x2000 is the center (no bends))
         int dataBytes = map(pBendRead, 0, 1023, 0x0, 0x3FFF);
 
         // Literally split dataBytes to two bytes
         byte LSB = dataBytes << 4;
         byte MSB = dataBytes >> 4;
-        MIDI(11100000,LSB, MSB);
+
+        MIDI(0xE0,LSB, MSB);
     }
 }
 
 void pitchModulate(){
     int pModRead_x = analogRead(pModPin_x); int pModRead_y = analogRead(pModPin_y);
-    int pModRead = (pModRead_x + pModRead_y) / 2;
 
     // Check if the joystick is active (i.e any of the jsticks potentiometers axes is moving)
-    if ((checkActiveJoysticks(pModRead_x, pModIdleVal_x)) || (checkActiveJoysticks(pModRead_y, pModIdleVal_y))){
+    if ((checkActiveAnalog(pModRead_x, pModIdleVal_x)) || (checkActiveAnalog(pModRead_y, pModIdleVal_y))){
+        
+        int pModRead = (pModRead_x + pModRead_y) / 2;
         
         // Map the pBendRead to values from 0 to 8192 (0x2000 is the center (no bends))
         int dataBytes = map(pModRead, 0, 1023, 0x0, 0x3FFF);
@@ -153,9 +167,33 @@ void pitchModulate(){
 
 }
 
+void drumPad(){
+    for (int i = 0; i < 8; i++){
+        switch (i){
+            case 0: pinToRead = A4; break;
+            case 1: pinToRead = A5; break;
+            case 2: pinToRead = A6; break;
+            case 3: pinToRead = A7; break;
+            case 4: pinToRead = A8; break;
+            case 5: pinToRead = A9; break;
+            case 6: pinToRead = A10; break;
+            case 7: pinToRead = A11; break;
+        }
+        dPadsReads[i] = analogRead(dPadsPin[pinToRead]);
+        if (checkActiveAnalog(dPadsReads[i], dPadsIdle[i])){
+
+            // Default drum intruments channel based on GM1 is on channel 10. 35 is acoustic bass drum
+            MIDI(0x99, 35, map(dPadsReads[i], 0, 1023, 0, 255)); // TO-CHANGE
+            MIDI(0x89, 35, 0);
+
+        }
+    }
+}
 
 void setup(){
     Serial.begin(38400);
+
+    pinMode(shiftKey0, INPUT_PULLUP); pinMode(shiftKey1, INPUT_PULLUP);
 
     // Initialize note pins and lastNotePinState 2D array
     for (int i : notePin){
@@ -168,21 +206,46 @@ void setup(){
     // Calibration
     int i = 0;
     while (millis() < 2000){
-        if (millis() % 200 == 0){                      // Sum up 10 analog readings of joysticks that were read,
+        if (millis() % 200 == 0){       // Summation of 10 reads in 2 secs
+            
+             // Ananlog joysticks
             pBendIdleVal_x += analogRead(pBendPin_x); pBendIdleVal_y += analogRead(pBendPin_y);
             pModIdleVal_x += analogRead(pModPin_x); pModIdleVal_y += analogRead(pModPin_y);
+
+            // Drumpads
+            for (int i2 = 0; i2 < 8; i2++){
+                switch (i2){
+                case 0: pinToRead = A4; break;
+                case 1: pinToRead = A5; break;
+                case 2: pinToRead = A6; break;
+                case 3: pinToRead = A7; break;
+                case 4: pinToRead = A8; break;
+                case 5: pinToRead = A9; break;
+                case 6: pinToRead = A10; break;
+                case 7: pinToRead = A11; break;
+                }
+                dPadsIdle[i2] += analogRead(dPadsPin[pinToRead]);
+            }
             i++;
         }
     }
 
-    // Divide the sum of those analog readings by 10 to get the average value
+    // Divide all the summations by 10 to get the average value
+
+    // Joystics
     pBendIdleVal_x = round(pBendIdleVal_x / i); pBendIdleVal_y = round(pBendIdleVal_y / i);
     pModIdleVal_x = round(pModIdleVal_x / i); pModIdleVal_y = round(pModIdleVal_y / i);
+
+    // Drumpads
+    for (int i2 = 0; i2 < 8; i2++){
+        dPadsIdle[i2] = round(dPadsIdle[i2] / 10);
+    }
 }
 
 void loop(){
     listenNotePins();
-    pitchBend();
-    pitchModulate();
+//    pitchBend();
+//    pitchModulate();
+//    drumPad();
     delay(1);           // Delay for 1 milisecond for execution stability
 }
